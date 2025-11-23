@@ -1,0 +1,16 @@
+# Dataset configuration for Qwen-Image-Edit-2509 LoRA training
+# Generated automatically
+
+[general]
+resolution = [1024, 1024]
+caption_extension = ".txt"
+batch_size = 1
+enable_bucket = true
+bucket_no_upscale = false
+
+[[datasets]]
+image_directory = "C:/Work/AI/musubi-tuner/dataset/gendata/vietnamese_dataset_qwen_edit/images"
+control_directory = "C:/Work/AI/musubi-tuner/dataset/gendata/vietnamese_dataset_qwen_edit/controls"
+cache_directory = "C:/Work/AI/musubi-tuner/dataset/gendata/vietnamese_dataset_qwen_edit/cache"
+qwen_image_edit_control_resolution = [1024, 1024]  # Recommended: resize control to 1M pixels
+num_repeats = 1

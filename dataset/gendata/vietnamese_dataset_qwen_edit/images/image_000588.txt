@@ -1,0 +1,1 @@
+Add Vietnamese text "Trẻ em vui vẻ" to the white background image. The text should be black and centered.

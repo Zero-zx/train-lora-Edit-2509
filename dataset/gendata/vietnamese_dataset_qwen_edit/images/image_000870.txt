@@ -1,0 +1,1 @@
+Add Vietnamese text "Hoa mai" to the white background image. The text should be black and centered.

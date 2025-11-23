@@ -1,0 +1,1 @@
+Add Vietnamese text "Con mèo dễ thương" to the white background image. The text should be black and centered.

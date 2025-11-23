@@ -1,0 +1,1 @@
+Add Vietnamese text "Cánh đồng lúa" to the white background image. The text should be black and centered.
