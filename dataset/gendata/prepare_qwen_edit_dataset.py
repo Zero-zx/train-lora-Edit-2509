@@ -189,6 +189,7 @@ def main():
         image_dir_abs,
         control_dir_abs,
         cache_dir_abs,
+        str(output_images_dir),  # Captions cùng thư mục với images
         args.resolution
     )
     

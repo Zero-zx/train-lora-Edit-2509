@@ -98,10 +98,6 @@ class MemoryEfficientSafeOpen:
         """
         self.filename = filename
         self.file = open(filename, "rb")
-        # Get file size for validation
-        self.file.seek(0, 2)  # Seek to end
-        self.file_size = self.file.tell()
-        self.file.seek(0)  # Reset to beginning
         self.header, self.header_size = self._read_header()
         self.disable_numpy_memmap = disable_numpy_memmap
 
@@ -134,35 +130,9 @@ class MemoryEfficientSafeOpen:
 
         Returns:
             tuple: (header_dict, header_size) containing parsed header and its size.
-        
-        Raises:
-            ValueError: If header size is invalid or unreasonably large.
-            MemoryError: If header size would cause memory issues.
         """
         # Read header size (8 bytes, little-endian unsigned long long)
-        header_size_bytes = self.file.read(8)
-        if len(header_size_bytes) < 8:
-            raise ValueError(f"Invalid safetensors file: could not read header size from {self.filename}")
-        
-        header_size = struct.unpack("<Q", header_size_bytes)[0]
-        
-        # Validate header size is reasonable
-        # Safetensors headers should typically be < 100MB, but we'll allow up to 1GB as a safety limit
-        MAX_HEADER_SIZE = 1024 * 1024 * 1024  # 1GB
-        if header_size > MAX_HEADER_SIZE:
-            raise MemoryError(
-                f"Header size ({header_size:,} bytes) exceeds maximum allowed size ({MAX_HEADER_SIZE:,} bytes). "
-                f"This suggests the file '{self.filename}' may be corrupted or not a valid safetensors file."
-            )
-        
-        # Validate header size doesn't exceed file size
-        # Account for the 8 bytes we already read
-        if header_size > (self.file_size - 8):
-            raise ValueError(
-                f"Invalid safetensors file: header size ({header_size:,} bytes) exceeds file size "
-                f"({self.file_size:,} bytes). File '{self.filename}' may be corrupted."
-            )
-        
+        header_size = struct.unpack("<Q", self.file.read(8))[0]
         # Read and decode header JSON
         header_json = self.file.read(header_size).decode("utf-8")
         return json.loads(header_json), header_size
@@ -329,30 +299,13 @@ def load_safetensors(
         # return safetensors.torch.load(open(path, "rb").read())
         # use experimental loader
         # logger.info(f"Loading without mmap (experimental)")
+        state_dict = {}
         device = torch.device(device) if device is not None else None
-        try:
-            state_dict = {}
-            with MemoryEfficientSafeOpen(path, disable_numpy_memmap=disable_numpy_memmap) as f:
-                for key in f.keys():
-                    state_dict[key] = f.get_tensor(key, device=device, dtype=dtype)
-            synchronize_device(device)
-            return state_dict
-        except (MemoryError, ValueError) as e:
-            # Fallback to standard safetensors loader if custom loader fails
-            # This can happen if the file is corrupted or has an invalid format
-            import warnings
-            warnings.warn(
-                f"Custom safetensors loader failed for {path}: {e}. "
-                f"Falling back to standard safetensors loader."
-            )
-            try:
-                state_dict = load_file(path, device=device)
-            except:
-                state_dict = load_file(path)  # prevent device invalid Error
-            if dtype is not None:
-                for key in state_dict.keys():
-                    state_dict[key] = state_dict[key].to(dtype=dtype)
-            return state_dict
+        with MemoryEfficientSafeOpen(path, disable_numpy_memmap=disable_numpy_memmap) as f:
+            for key in f.keys():
+                state_dict[key] = f.get_tensor(key, device=device, dtype=dtype)
+        synchronize_device(device)
+        return state_dict
     else:
         try:
             state_dict = load_file(path, device=device)
